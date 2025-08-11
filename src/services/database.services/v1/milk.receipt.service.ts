@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { MilkReceipt } from "../../../models/v1/milk.receipt.model";
 import { IMilkReceipt } from "../../../types/request/milk.receipt.type";
 
@@ -14,8 +15,31 @@ export const getReceiptWithUser = async (receiptId: string) => {
     .exec();
 };
 
-export const getAllReceiptsWithUsers = async () => {
-  return await MilkReceipt.find()
+export const getAllReceiptsWithUsers = async ({
+  month, // format: 'YYYY-MM'
+  day,   // format: 'DD-MM-YYYY'
+}: { month?: string; day?: string }) => {
+
+  const filter: any = {};
+
+  if (day) {
+    const parsedDay = dayjs(day, 'DD-MM-YYYY', true);
+    if (parsedDay.isValid()) {
+      filter.dateTime = {
+        $gte: parsedDay.startOf('day').toDate(),
+        $lte: parsedDay.endOf('day').toDate(),
+      };
+    }
+  } else if (month) {
+    const parsedMonth = dayjs(month, 'YYYY-MM', true);
+    if (parsedMonth.isValid()) {
+      filter.dateTime = {
+        $gte: parsedMonth.startOf('month').toDate(),
+        $lte: parsedMonth.endOf('month').toDate(),
+      };
+    }
+  }
+  return await MilkReceipt.find(filter)
     .populate('createdId', 'name email')
     .sort({ createdAt: -1 })
     .lean()
